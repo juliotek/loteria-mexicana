@@ -32,6 +32,12 @@ export class LoteriaComponent implements OnInit {
   fuentes = ['Arial', 'Verdana', 'Comic Sans MS', 'Times New Roman', 'Courier New'];
   fuenteSeleccionada = 'Arial';
 
+  filasCarta = 4;
+  columnasCarta = 4;
+  margenCarta = 10;
+  borderWeigth = 1;
+  fontSize = 12;
+
   ngOnInit() {
     this.cargarCartasDesdeLocalStorage();
   }
@@ -42,7 +48,7 @@ export class LoteriaComponent implements OnInit {
       for (let archivo of archivos) {
         const reader = new FileReader();
         reader.onload = (e: any) => {
-          this.cartas.push({ imagen: e.target.result, texto: 'Nueva carta', numero: this.cartas.length + 1 });
+          this.cartas.push({ imagen: e.target.result, texto: 'Nueva', numero: this.cartas.length + 1 });
           this.guardarEnLocalStorage();
         };
         reader.readAsDataURL(archivo);
@@ -115,14 +121,14 @@ export class LoteriaComponent implements OnInit {
       format: [this.tamanoSeleccionado.ancho, this.tamanoSeleccionado.alto]
     });
 
-    const margen = 10;
-    const filas = 4;
-    const columnas = 4;
+    const margen = this.margenCarta;
+    const filas = this.filasCarta;
+    const columnas = this.columnasCarta;
     const anchoCarta = (this.tamanoSeleccionado.ancho - 2 * margen) / columnas;
     const altoCarta = (this.tamanoSeleccionado.alto - 2 * margen) / filas;
 
     for (let i = 0; i < this.cantidadCartas; i++) {
-      let cartasMezcladas = [...this.cartas].sort(() => Math.random() - 0.5).slice(0, 16);
+      let cartasMezcladas = [...this.cartas].sort(() => Math.random() - 0.5).slice(0, (filas * columnas));
 
       let x = margen;
       let y = margen;
@@ -136,7 +142,7 @@ export class LoteriaComponent implements OnInit {
 
           // Agregar borde
           doc.setDrawColor(0); // Color negro
-          doc.setLineWidth(1);
+          doc.setLineWidth(this.borderWeigth);
           doc.rect(x, y, anchoCarta, altoCarta);
 
           // Agregar imagen (ajustada al espacio)
@@ -144,8 +150,9 @@ export class LoteriaComponent implements OnInit {
 
           // Agregar texto con la fuente seleccionada
           doc.setFont('helvetica', 'bold');
-          doc.setFontSize(12);
+          doc.setFontSize(this.fontSize);
           doc.text(carta.texto, x + anchoCarta / 2, y + altoCarta - 5, { align: 'center' });
+          doc.text(`${carta.numero}`, x + 3, y + 8);
 
           x += anchoCarta;
           index++;
@@ -170,9 +177,9 @@ export class LoteriaComponent implements OnInit {
       format: [width, height]
     });
   
-    let x = 10, y = 10, ancho = 60, alto = 75;
+    let x = 10, y = 10, ancho = 62, alto = 95;
     let cartasPorFila = 3;
-    let margen = 8;
+    let margen = this.margenCarta;
   
     this.cartas.forEach((carta, index) => {
       // Dibujar borde
@@ -189,7 +196,7 @@ export class LoteriaComponent implements OnInit {
       pdf.text(`${carta.numero}`, x + 3, y + 8);
   
       // Agregar texto debajo de la imagen
-      pdf.setFontSize(12);
+      pdf.setFontSize(this.fontSize);
       pdf.text(carta.texto, x + ancho / 2, y + alto - 5, { align: 'center' });
   
       x += ancho + margen;
