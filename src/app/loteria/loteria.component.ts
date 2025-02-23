@@ -10,20 +10,27 @@ import { CommonModule} from '@angular/common'
   styleUrl: './loteria.component.css'
 })
 export class LoteriaComponent implements OnInit {
-  cartas: { imagen: string, texto: string }[] = [];
+  cartas: { imagen: string, texto: string, numero: number }[] = [];
   cartasMezcladas: { imagen: string, texto: string }[] = [];
   cartaActual: { imagen: string, texto: string } | null = null;
   tablero: { imagen: string, texto: string }[][] = [];
+  cartasJuego: { imagen: string, texto: string }[] = [];
 
   tamanosPDF = [
-    { nombre: 'A4', width: 210, height: 297 },
-    { nombre: 'Carta', width: 216, height: 279 },
-    { nombre: 'Personalizado', width: 0, height: 0 }
+    { nombre: 'Carta', ancho: 215, alto: 279 },
+    { nombre: 'A4', ancho: 210, alto: 297 },
+    { nombre: 'A3', ancho: 297, alto: 420 }
   ];
+
   tamanoSeleccionado = this.tamanosPDF[0];
 
   anchoPersonalizado = 210;
   altoPersonalizado = 297;
+  cantidadCartasJuego = 9;
+  cantidadCartas = 1;
+
+  fuentes = ['Arial', 'Verdana', 'Comic Sans MS', 'Times New Roman', 'Courier New'];
+  fuenteSeleccionada = 'Arial';
 
   ngOnInit() {
     this.cargarCartasDesdeLocalStorage();
@@ -35,29 +42,25 @@ export class LoteriaComponent implements OnInit {
       for (let archivo of archivos) {
         const reader = new FileReader();
         reader.onload = (e: any) => {
-          this.cartas.push({ imagen: e.target.result, texto: 'Nueva carta' });
+          this.cartas.push({ imagen: e.target.result, texto: 'Nueva carta', numero: this.cartas.length + 1 });
           this.guardarEnLocalStorage();
         };
         reader.readAsDataURL(archivo);
       }
     }
   }
-  
-  agregarCarta(event: any, texto: string) {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        const nuevaCarta = { imagen: e.target.result, texto };
-        this.cartas.push(nuevaCarta);
-        this.guardarEnLocalStorage();
-      };
-      reader.readAsDataURL(file);
-    }
+
+  generarCartasJuego() {
+    this.cartasJuego = this.cartas.slice(0, this.cantidadCartasJuego);
+  }
+
+  reordenarNumeros() {
+    this.cartas.forEach((carta, index) => carta.numero = index + 1);
   }
 
   eliminarCarta(index: number) {
     this.cartas.splice(index, 1);
+    this.reordenarNumeros();
     this.guardarEnLocalStorage();
   }
 
@@ -97,28 +100,66 @@ export class LoteriaComponent implements OnInit {
     if (this.tamanoSeleccionado.nombre === 'Personalizado') {
       return [this.anchoPersonalizado, this.altoPersonalizado];
     }
-    return [this.tamanoSeleccionado.width, this.tamanoSeleccionado.height];
+    return [this.tamanoSeleccionado.ancho, this.tamanoSeleccionado.alto];
   }
 
   generarPDF() {
-    const [width, height] = this.obtenerTamanoPDF();
-    const pdf = new jsPDF({
+    if (this.cartas.length < 16) {
+      alert("Debes subir al menos 16 imágenes para generar una lotería.");
+      return;
+    }
+
+    const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: [width, height]
+      format: [this.tamanoSeleccionado.ancho, this.tamanoSeleccionado.alto]
     });
 
-    let x = 10, y = 10, ancho = 40, alto = 60;
-    this.cartas.forEach((carta, index) => {
-      pdf.addImage(carta.imagen, 'JPEG', x, y, ancho, alto);
-      pdf.text(carta.texto, x + 5, y + alto + 5);
-      x += ancho + 10;
-      if ((index + 1) % 4 === 0) {
-        x = 10;
-        y += alto + 20;
+    const margen = 10;
+    const filas = 4;
+    const columnas = 4;
+    const anchoCarta = (this.tamanoSeleccionado.ancho - 2 * margen) / columnas;
+    const altoCarta = (this.tamanoSeleccionado.alto - 2 * margen) / filas;
+
+    for (let i = 0; i < this.cantidadCartas; i++) {
+      let cartasMezcladas = [...this.cartas].sort(() => Math.random() - 0.5).slice(0, 16);
+
+      let x = margen;
+      let y = margen;
+      let index = 0;
+
+      for (let fila = 0; fila < filas; fila++) {
+        for (let columna = 0; columna < columnas; columna++) {
+          if (index >= cartasMezcladas.length) break;
+
+          let carta = cartasMezcladas[index];
+
+          // Agregar borde
+          doc.setDrawColor(0); // Color negro
+          doc.setLineWidth(1);
+          doc.rect(x, y, anchoCarta, altoCarta);
+
+          // Agregar imagen (ajustada al espacio)
+          doc.addImage(carta.imagen, 'JPEG', x + 2, y + 2, anchoCarta - 4, altoCarta - 20);
+
+          // Agregar texto con la fuente seleccionada
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(12);
+          doc.text(carta.texto, x + anchoCarta / 2, y + altoCarta - 5, { align: 'center' });
+
+          x += anchoCarta;
+          index++;
+        }
+        x = margen;
+        y += altoCarta;
       }
-    });
-    pdf.save('loteria.pdf');
+
+      if (i < this.cantidadCartas - 1) {
+        doc.addPage();
+      }
+    }
+
+    doc.save('LoteriaMexicana.pdf');
   }
 
   imprimirBaraja() {
@@ -128,30 +169,46 @@ export class LoteriaComponent implements OnInit {
       unit: 'mm',
       format: [width, height]
     });
-
-    let x = 10, y = 10, ancho = 50, alto = 75;
+  
+    let x = 10, y = 10, ancho = 60, alto = 75;
     let cartasPorFila = 3;
-    let margen = 15;
-
+    let margen = 8;
+  
     this.cartas.forEach((carta, index) => {
-      pdf.addImage(carta.imagen, 'JPEG', x, y, ancho, alto);
-      pdf.text(carta.texto, x + 15, y + alto + 5);
-
+      // Dibujar borde
+      pdf.setDrawColor(0); // Color negro
+      pdf.setLineWidth(1);
+      pdf.rect(x, y, ancho, alto);
+  
+      // Agregar imagen
+      pdf.addImage(carta.imagen, 'JPEG', x + 2, y + 8, ancho - 4, alto - 20);
+  
+      // Agregar número en la esquina superior izquierda
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(14);
+      pdf.text(`${carta.numero}`, x + 3, y + 8);
+  
+      // Agregar texto debajo de la imagen
+      pdf.setFontSize(12);
+      pdf.text(carta.texto, x + ancho / 2, y + alto - 5, { align: 'center' });
+  
       x += ancho + margen;
       if ((index + 1) % cartasPorFila === 0) {
         x = 10;
         y += alto + margen;
       }
-
+  
+      // Si la siguiente fila no cabe en la página, agregar una nueva
       if (y + alto + margen > height - 20) {
         pdf.addPage();
         x = 10;
         y = 10;
       }
     });
-
+  
     pdf.save('baraja_completa.pdf');
   }
+  
 
   guardarEnLocalStorage() {
     localStorage.setItem('cartasLoteria', JSON.stringify(this.cartas));
