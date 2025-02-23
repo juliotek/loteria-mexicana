@@ -81,19 +81,22 @@
   
     <!-- Cartas Disponibles -->
     <h2 class="text-xl font-bold">Imagenes</h2>
-    <div class="grid grid-cols-4 gap-4 mt-4">
-        <div *ngFor="let carta of cartas; let i = index" class="relative bg-gray-800 p-2 rounded-lg">
+    <div cdkDropList class="grid grid-cols-4 gap-4 mt-4" (cdkDropListDropped)="moverCarta($event)">
+        <div *ngFor="let carta of cartas; let i = index" cdkDrag class="relative bg-gray-800 p-2 rounded-lg cursor-grab">
           <span class="absolute top-0 left-0 text-white px-2 py-1 rounded text-s font-bold">{{ carta.numero }}</span>
-          <img [src]="carta.imagen" alt="Carta"
-          class="w-36 h-48 object-cover rounded-lg justify-rigth">
-        <input type="text" [(ngModel)]="carta.texto"
-          class="w-full text-center mt-2 p-1 bg-gray-700  text-white rounded-lg">
-        <button (click)="eliminarCarta(i)"
-          class="absolute top-1 right-1 text-gray-900 dark:text-white w-6 h-6 rounded-lg flex items-center justify-center hover:bg-red-600 cursor-pointer">
-          <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m15 9-6 6m0-6 6 6m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
-          </svg>                          
-        </button>        
+          
+          <img [src]="carta.imagen" alt="Carta" class="w-36 h-48 object-cover rounded-lg">
+          
+          <input type="text" [(ngModel)]="carta.texto" class="w-full text-center mt-2 p-1 bg-gray-700 text-white rounded-lg">
+          
+          <button (click)="eliminarCarta(i)"
+            class="absolute top-1 right-1 text-gray-900 dark:text-white w-6 h-6 rounded-lg flex items-center justify-center hover:bg-red-600 cursor-pointer">
+            <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+              width="24" height="24" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="m15 9-6 6m0-6 6 6m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+          </button>
         </div>
       </div>
   </div>

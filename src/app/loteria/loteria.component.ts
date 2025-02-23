@@ -1,11 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { jsPDF } from 'jspdf';
 import { FormsModule } from '@angular/forms';
-import { CommonModule} from '@angular/common'
+import { CommonModule} from '@angular/common';
+import { CdkDragDrop, DragDropModule, moveItemInArray  } from '@angular/cdk/drag-drop';
 
 @Component({
   selector: 'app-loteria',
-  imports: [FormsModule, CommonModule],
+  imports: [FormsModule, CommonModule, DragDropModule],
   templateUrl: './loteria.component.html',
   styleUrl: './loteria.component.css'
 })
@@ -42,6 +43,11 @@ export class LoteriaComponent implements OnInit {
     this.cargarCartasDesdeLocalStorage();
   }
 
+  moverCarta(event: CdkDragDrop<any[]>) {
+    moveItemInArray(this.cartas, event.previousIndex, event.currentIndex);
+    this.reordenarNumeros();
+  }
+  
   agregarCartas(event: any) {
     const archivos = event.target.files;
     if (archivos) {
